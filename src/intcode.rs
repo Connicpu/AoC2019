@@ -6,6 +6,25 @@ pub struct Cpu<I: IO = ()> {
     pub io: I,
 }
 
+pub fn parse(input: &str) -> Vec<i32> {
+    let mut memory = Vec::with_capacity(256);
+    let mut state = 0;
+    let mut sign = 1;
+    for &b in input.as_bytes() {
+        match b {
+            b'-' => sign = -1,
+            b'0'..=b'9' => state = state * 10 + (b - b'0') as i32,
+            b',' | b'\n' => {
+                memory.push(state * sign);
+                state = 0;
+                sign = 1;
+            }
+            _ => continue,
+        }
+    }
+    memory
+}
+
 impl Cpu<()> {
     pub fn new(memory: Vec<i32>) -> Self {
         Cpu::with_io(memory, ())
@@ -14,10 +33,7 @@ impl Cpu<()> {
 
 impl<I: IO> Cpu<I> {
     pub fn parse_with_io(input: &str, io: I) -> Self {
-        let memory = input
-            .split(',')
-            .filter_map(|i| i.trim().parse().ok())
-            .collect();
+        let memory = parse(input);
         Cpu::with_io(memory, io)
     }
 
@@ -99,7 +115,7 @@ impl<I: IO> Cpu<I> {
 
                 // Halt
                 99 => break,
-                _ => panic!(),
+                unk => panic!("Unknown opcode {}", unk),
             }
         }
     }
@@ -154,5 +170,25 @@ impl IO for StdIO {
     }
     fn output(&mut self, value: i32) {
         println!("Output: {}", value);
+    }
+}
+
+pub struct SingleIO {
+    pub input: i32,
+    pub output: i32,
+}
+
+impl SingleIO {
+    pub fn new(input: i32) -> SingleIO {
+        SingleIO { input, output: 0 }
+    }
+}
+
+impl IO for SingleIO {
+    fn input(&mut self) -> i32 {
+        self.input
+    }
+    fn output(&mut self, value: i32) {
+        self.output = value;
     }
 }
