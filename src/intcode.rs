@@ -105,7 +105,7 @@ impl<I: IO> Cpu<I> {
                     self.pc += 4;
                 }
 
-                // equals
+                // Equals
                 8 => {
                     let cond = self.param_get(mode1, 1) == self.param_get(mode2, 2);
                     let value = cond as i32;
