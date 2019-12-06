@@ -82,15 +82,15 @@ fn main() {
     let start = tree["YOU"].parent.expect("YOU must have a parent");
     let end = tree["SAN"].parent.expect("SAN must have a parent");
 
-    let (_path, cost) = dijkstra(&start, |&n| adjacent_bodies(n, &tree), |n| *n == end)
-        .expect("There is no route from you to santa :(");
+    let (_, cost) = dijkstra(&start, |&n| adjacent_bodies(n, &tree), |n| *n == end)
+        .expect("There must be a path from you to santa!");
 
     println!("Part 2: {}", cost);
 }
 
 #[cfg(test)]
 #[bench]
-fn parsing(bench: &mut test::Bencher) {
+fn b1_parsing(bench: &mut test::Bencher) {
     bench.iter(|| {
         let orbits = orbits();
         test::black_box(&orbits);
@@ -99,7 +99,7 @@ fn parsing(bench: &mut test::Bencher) {
 
 #[cfg(test)]
 #[bench]
-fn tree_building(bench: &mut test::Bencher) {
+fn b2_tree_building(bench: &mut test::Bencher) {
     let orbits = orbits();
     bench.iter(|| {
         let tree = orbit_tree(&orbits);
@@ -109,7 +109,7 @@ fn tree_building(bench: &mut test::Bencher) {
 
 #[cfg(test)]
 #[bench]
-fn suborbit_counting(bench: &mut test::Bencher) {
+fn b3_suborbit_counting(bench: &mut test::Bencher) {
     let orbits = orbits();
     let tree = orbit_tree(&orbits);
     bench.iter(|| {
@@ -119,14 +119,14 @@ fn suborbit_counting(bench: &mut test::Bencher) {
 
 #[cfg(test)]
 #[bench]
-fn pathfinding(bench: &mut test::Bencher) {
+fn b4_pathfinding(bench: &mut test::Bencher) {
     let orbits = orbits();
     let tree = orbit_tree(&orbits);
     bench.iter(|| {
         let start = tree["YOU"].parent.expect("YOU must have a parent");
         let end = tree["SAN"].parent.expect("SAN must have a parent");
 
-        let (_path, cost) = dijkstra(&start, |&n| adjacent_bodies(n, &tree), |n| *n == end)
+        let (_, cost) = dijkstra(&start, |&n| adjacent_bodies(n, &tree), |n| *n == end)
             .expect("There is no route from you to santa :(");
         test::black_box(cost);
     });
