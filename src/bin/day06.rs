@@ -39,9 +39,11 @@ fn orbit_tree(orbits: &[(Id, Id)]) -> OrbitTree {
     let mut tree = OrbitTree::with_capacity(1792);
 
     for &(a, b) in orbits {
+        // Set B as a child of A. A's entry will be created if it does not exist
         let node_a = tree.entry(a).or_default();
         node_a.children.push(b);
 
+        // Set A as the parent of B. B's entry will be created if it does not exist
         let node_b = tree.entry(b).or_default();
         node_b.parent = Some(a);
     }
@@ -49,6 +51,7 @@ fn orbit_tree(orbits: &[(Id, Id)]) -> OrbitTree {
     tree
 }
 
+// Yields all of the node's children along with its parent
 fn adjacent_bodies(id: Id, tree: &'_ OrbitTree) -> impl Iterator<Item = (Id, i32)> + '_ {
     let node = &tree[&id];
     node.children
@@ -58,6 +61,7 @@ fn adjacent_bodies(id: Id, tree: &'_ OrbitTree) -> impl Iterator<Item = (Id, i32
         .map(|n| (n, 1))
 }
 
+// Depth counter. Call with depth=1 for the root.
 fn count_suborbits(map: &OrbitTree, id: Id, depth: i32) -> i32 {
     if !map.contains_key(&id) {
         return 0;
