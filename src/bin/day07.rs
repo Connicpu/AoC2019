@@ -1,11 +1,13 @@
-use aoc2019::intcode::{ChannelIO, Cpu};
+use aoc2019::intcode::{parse, ChannelIO, Cpu};
 
 use std::sync::mpsc::channel;
 use std::thread::spawn;
 
+use once_cell::sync::Lazy;
 use permute::permutations_of;
 
 static INPUT: &str = include_str!("input/day07.txt");
+static PROGRAM: Lazy<Vec<i32>> = Lazy::new(|| parse(INPUT));
 
 fn try_sequence<'a>(seq: impl Iterator<Item = &'a i32>) -> i32 {
     let mut senders = Vec::with_capacity(5);
@@ -30,7 +32,7 @@ fn try_sequence<'a>(seq: impl Iterator<Item = &'a i32>) -> i32 {
     // when it computes its result.
     let mut cpus = Vec::with_capacity(5);
     for (rx, tx) in receivers.into_iter().zip(senders) {
-        cpus.push(Cpu::parse_with_io(INPUT, ChannelIO::new(rx, tx)));
+        cpus.push(Cpu::with_io(PROGRAM.clone(), ChannelIO::new(rx, tx)));
     }
 
     // Run all but the last CPU on its own thread
