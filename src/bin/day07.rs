@@ -1,78 +1,51 @@
-use aoc2019::intcode::{ChannelIO, Cpu, IterIO};
+use aoc2019::intcode::{ChannelIO, Cpu};
+
+use std::sync::mpsc::channel;
+use std::thread::spawn;
+
+use permute::permutations_of;
 
 static INPUT: &str = include_str!("input/day07.txt");
 
-fn make_cpu(phase: i32, input: i32) -> Cpu<IterIO<impl Iterator<Item = i32>>> {
-    Cpu::parse_with_io(
-        INPUT,
-        IterIO::new(Some(phase).into_iter().chain(Some(input))),
-    )
-}
+fn try_sequence<'a>(seq: impl Iterator<Item = &'a i32>) -> i32 {
+    let mut senders = Vec::with_capacity(5);
+    let mut receivers = Vec::with_capacity(5);
 
-fn try_sequence(seq: &[&i32]) -> i32 {
-    let mut input = 0;
-    for &&phase in seq {
-        let mut cpu = make_cpu(phase, input);
-        cpu.run();
-        input = cpu.io.output
+    // Create a channel pair for each CPU
+    for &phase in seq {
+        let (tx, rx) = channel();
+        tx.send(phase).expect("um");
+        senders.push(tx);
+        receivers.push(rx);
     }
-    input
+
+    // Send the initial input to the first CPU
+    senders[0].send(0).expect("um");
+
+    // Rotate the senders so that CPU A's output will send to CPU B's input
+    senders.rotate_left(1);
+
+    // Construct the CPUs in a feedback loop
+    let mut cpus = Vec::with_capacity(5);
+    for (rx, tx) in receivers.drain(..).zip(senders.drain(..)) {
+        cpus.push(Cpu::parse_with_io(INPUT, ChannelIO::new(rx, tx)));
+    }
+
+    // Run all but the last CPU on its own thread
+    for mut cpu in cpus.drain(..cpus.len() - 1) {
+        spawn(move || cpu.run());
+    }
+
+    // Run the final CPU and get its output when it finally halts
+    cpus[0].run();
+    cpus[0].io.last_output
 }
 
-fn feedback_loop_sequence(seq: &[&i32]) -> i32 {
-    use std::sync::mpsc::channel;
-    use std::thread::spawn;
-
-    assert!(seq.len() == 5);
-
-    let (a_tx, a_rx) = channel();
-    let (b_tx, b_rx) = channel();
-    let (c_tx, c_rx) = channel();
-    let (d_tx, d_rx) = channel();
-    let (e_tx, e_rx) = channel();
-
-    a_tx.send(*seq[0]).unwrap();
-    b_tx.send(*seq[1]).unwrap();
-    c_tx.send(*seq[2]).unwrap();
-    d_tx.send(*seq[3]).unwrap();
-    e_tx.send(*seq[4]).unwrap();
-
-    a_tx.send(0).unwrap();
-
-    spawn(move || {
-        Cpu::parse_with_io(INPUT, ChannelIO::new(a_rx, b_tx)).run();
-    });
-    spawn(move || {
-        Cpu::parse_with_io(INPUT, ChannelIO::new(b_rx, c_tx)).run();
-    });
-    spawn(move || {
-        Cpu::parse_with_io(INPUT, ChannelIO::new(c_rx, d_tx)).run();
-    });
-    spawn(move || {
-        Cpu::parse_with_io(INPUT, ChannelIO::new(d_rx, e_tx)).run();
-    });
-
-    let mut cpu_e = Cpu::parse_with_io(INPUT, ChannelIO::new(e_rx, a_tx));
-    cpu_e.run();
-    cpu_e.io.last_output
+fn find_max_sequence(phases: &[i32]) -> i32 {
+    permutations_of(phases).map(try_sequence).max().unwrap()
 }
 
 fn main() {
-    let permutations = permutator::XPermutationIterator::new(&[0, 1, 2, 3, 4], |_| true);
-    println!(
-        "Part 1: {}",
-        permutations
-            .map(|p| try_sequence(&p))
-            .max()
-            .expect("There's a max...")
-    );
-
-    let permutations = permutator::XPermutationIterator::new(&[5, 6, 7, 8, 9], |_| true);
-    println!(
-        "Part 2: {}",
-        permutations
-            .map(|p| feedback_loop_sequence(&p))
-            .max()
-            .expect("There's a max...")
-    );
+    println!("Part 1: {}", find_max_sequence(&[0, 1, 2, 3, 4]));
+    println!("Part 2: {}", find_max_sequence(&[5, 6, 7, 8, 9]));
 }
