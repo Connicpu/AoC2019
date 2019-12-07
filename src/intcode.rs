@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::sync::mpsc::{Receiver, Sender};
 
 pub struct Cpu<I: IO = ()> {
     pub memory: Vec<i32>,
@@ -190,5 +191,100 @@ impl IO for SingleIO {
     }
     fn output(&mut self, value: i32) {
         self.output = value;
+    }
+}
+
+pub struct OnceIO {
+    pub input: i32,
+    pub output: i32,
+}
+
+impl OnceIO {
+    pub fn new(input: i32) -> OnceIO {
+        OnceIO { input, output: 0 }
+    }
+}
+
+impl IO for OnceIO {
+    fn input(&mut self) -> i32 {
+        let val = self.input;
+        self.input = 0;
+        val
+    }
+    fn output(&mut self, value: i32) {
+        self.output = value;
+    }
+}
+
+pub struct IterIO<I: Iterator<Item = i32>> {
+    iter: I,
+    pub output: i32,
+}
+
+impl<I: Iterator<Item = i32>> IterIO<I> {
+    pub fn new(iter: I) -> IterIO<I> {
+        IterIO { iter, output: 0 }
+    }
+}
+
+impl<I: Iterator<Item = i32>> IO for IterIO<I> {
+    fn input(&mut self) -> i32 {
+        self.iter.next().unwrap()
+    }
+    fn output(&mut self, value: i32) {
+        self.output = value;
+    }
+}
+
+pub struct LoopIO {
+    pub input: Vec<i32>,
+    pub index: usize,
+    pub output: i32,
+}
+
+impl LoopIO {
+    pub fn new(input: Vec<i32>) -> LoopIO {
+        LoopIO {
+            input,
+            index: 0,
+            output: 0,
+        }
+    }
+}
+
+impl IO for LoopIO {
+    fn input(&mut self) -> i32 {
+        let val = self.input[self.index];
+        self.index = (self.index + 1) % self.input.len();
+        val
+    }
+    fn output(&mut self, value: i32) {
+        self.output = value;
+    }
+}
+
+pub struct ChannelIO {
+    input: Receiver<i32>,
+    output: Sender<i32>,
+    pub last_output: i32,
+}
+
+impl ChannelIO {
+    pub fn new(input: Receiver<i32>, output: Sender<i32>) -> Self {
+        ChannelIO {
+            input,
+            output,
+            last_output: 0,
+        }
+    }
+}
+
+impl IO for ChannelIO {
+    fn input(&mut self) -> i32 {
+        self.input.recv().unwrap_or(0)
+    }
+    fn output(&mut self, value: i32) {
+        self.last_output = value;
+        self.output.send(value).ok();
     }
 }
