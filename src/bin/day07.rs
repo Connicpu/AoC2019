@@ -19,9 +19,11 @@ fn try_sequence(seq: &[&i32]) -> i32 {
     input
 }
 
-fn bigger_sequence(seq: &[&i32]) -> i32 {
+fn feedback_loop_sequence(seq: &[&i32]) -> i32 {
     use std::sync::mpsc::channel;
     use std::thread::spawn;
+
+    assert!(seq.len() == 5);
 
     let (a_tx, a_rx) = channel();
     let (b_tx, b_rx) = channel();
@@ -69,7 +71,7 @@ fn main() {
     println!(
         "Part 2: {}",
         permutations
-            .map(|p| bigger_sequence(&p))
+            .map(|p| feedback_loop_sequence(&p))
             .max()
             .expect("There's a max...")
     );
