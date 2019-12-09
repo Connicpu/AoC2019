@@ -5,10 +5,10 @@ use aoc2019::intcode::{Cpu, SingleIO};
 
 static INPUT: &str = include_str!("input/day05.txt");
 
-const PART_1_INPUT: i32 = 1;
-const PART_2_INPUT: i32 = 5;
+const PART_1_INPUT: i64 = 1;
+const PART_2_INPUT: i64 = 5;
 
-fn calculate(input: i32) -> i32 {
+fn calculate(input: i64) -> i64 {
     let mut cpu = Cpu::parse_with_io(INPUT, SingleIO::new(input));
     cpu.run();
     cpu.io.output

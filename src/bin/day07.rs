@@ -7,9 +7,9 @@ use once_cell::sync::Lazy;
 use permute::permutations_of;
 
 static INPUT: &str = include_str!("input/day07.txt");
-static PROGRAM: Lazy<Vec<i32>> = Lazy::new(|| parse(INPUT));
+static PROGRAM: Lazy<Vec<i64>> = Lazy::new(|| parse(INPUT));
 
-fn try_sequence<'a>(seq: impl Iterator<Item = &'a i32>) -> i32 {
+fn try_sequence<'a>(seq: impl Iterator<Item = &'a i64>) -> i64 {
     let mut senders = Vec::with_capacity(5);
     let mut receivers = Vec::with_capacity(5);
 
@@ -45,7 +45,7 @@ fn try_sequence<'a>(seq: impl Iterator<Item = &'a i32>) -> i32 {
     cpus[0].io.last_output
 }
 
-fn find_max_sequence(phases: &[i32]) -> i32 {
+fn find_max_sequence(phases: &[i64]) -> i64 {
     // Get the output for each permutation of phases, and choose the largest
     permutations_of(phases).map(try_sequence).max().unwrap()
 }
