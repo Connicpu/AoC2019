@@ -25,8 +25,8 @@ impl Vec2 {
     fn gcd_form(self) -> Vec2 {
         let gcd = self.x.gcd(&self.y);
         Vec2 {
-            x: (self.x / gcd).abs(),
-            y: (self.y / gcd).abs(),
+            x: self.x / gcd,
+            y: self.y / gcd,
         }
     }
 
