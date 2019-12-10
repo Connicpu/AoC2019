@@ -1,12 +1,11 @@
+use std::cmp::Ordering;
 use std::collections::HashSet;
+use std::f64::consts::{FRAC_PI_2, PI};
+use std::ops::Sub;
 
 use num::Integer;
 
 static INPUT: &str = include_str!("input/day10.txt");
-
-fn parse() -> impl Iterator<Item = &'static [u8]> {
-    INPUT.lines().map(|line| line.as_bytes())
-}
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 struct Vec2 {
@@ -15,19 +14,9 @@ struct Vec2 {
 }
 
 impl Vec2 {
-    fn diff(self, other: Vec2) -> Vec2 {
-        Vec2 {
-            x: self.x - other.x,
-            y: self.y - other.y,
-        }
-    }
-
-    fn gcd_form(self) -> Vec2 {
+    fn simplified(self) -> Vec2 {
         let gcd = self.x.gcd(&self.y);
-        Vec2 {
-            x: self.x / gcd,
-            y: self.y / gcd,
-        }
+        (self.x / gcd, self.y / gcd).into()
     }
 
     fn between(self, a: Vec2, b: Vec2) -> bool {
@@ -38,22 +27,54 @@ impl Vec2 {
     }
 
     fn occludes(self, a: Vec2, b: Vec2) -> bool {
-        if !self.between(a, b) {
-            return false;
-        }
-
-        let asdiff = self.diff(a);
-        let abdiff = b.diff(a);
-
-        asdiff.gcd_form() == abdiff.gcd_form()
+        self.between(a, b) && (self - a).simplified() == (b - a).simplified()
     }
 
     fn angle(self, b: Vec2) -> f64 {
-        use std::f64::consts::{FRAC_PI_2, PI};
-        let diff = b.diff(self);
+        let diff = b - self;
         let theta = FRAC_PI_2 - (-diff.y as f64).atan2(diff.x as f64);
         theta.rem_euclid(PI * 2.0)
     }
+
+    fn cmp_angles(self, a: Vec2, b: Vec2) -> Ordering {
+        self.angle(a).partial_cmp(&self.angle(b)).unwrap()
+    }
+
+    fn can_see(self, other: Vec2, asteroids: &HashSet<Vec2>) -> bool {
+        for &occluder in asteroids {
+            if occluder == self || occluder == other {
+                continue;
+            }
+            if occluder.occludes(self, other) {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn all_detectable(self, asteroids: &'_ HashSet<Vec2>) -> impl Iterator<Item = Vec2> + '_ {
+        asteroids
+            .iter()
+            .cloned()
+            .filter(move |&b| b != self && self.can_see(b, asteroids))
+    }
+}
+
+impl Sub for Vec2 {
+    type Output = Vec2;
+    fn sub(self, rhs: Vec2) -> Vec2 {
+        (self.x - rhs.x, self.y - rhs.y).into()
+    }
+}
+
+impl From<(i32, i32)> for Vec2 {
+    fn from((x, y): (i32, i32)) -> Vec2 {
+        Vec2 { x, y }
+    }
+}
+
+fn parse() -> impl Iterator<Item = &'static [u8]> {
+    INPUT.lines().map(|line| line.as_bytes())
 }
 
 fn asteroids() -> HashSet<Vec2> {
@@ -62,33 +83,17 @@ fn asteroids() -> HashSet<Vec2> {
         for (x, &slot) in line.iter().enumerate() {
             if slot == b'#' {
                 let (x, y) = (x as i32, y as i32);
-                asteroids.insert(Vec2 { x, y });
+                asteroids.insert((x, y).into());
             }
         }
     }
     asteroids
 }
 
-fn can_see(a: Vec2, b: Vec2, asteroids: &HashSet<Vec2>) -> bool {
-    for &c in asteroids {
-        if c != a && c != b && c.occludes(a, b) {
-            return false;
-        }
-    }
-    true
-}
-
-fn all_detectable(a: Vec2, asteroids: &'_ HashSet<Vec2>) -> impl Iterator<Item = Vec2> + '_ {
-    asteroids
-        .iter()
-        .cloned()
-        .filter(move |&b| b != a && can_see(a, b, asteroids))
-}
-
 fn best_station(asteroids: &HashSet<Vec2>) -> (Vec2, usize) {
     asteroids
         .iter()
-        .map(|&a| (a, all_detectable(a, &asteroids).count()))
+        .map(|&a| (a, a.all_detectable(asteroids).count()))
         .max_by_key(|(_, v)| *v)
         .unwrap()
 }
@@ -97,8 +102,8 @@ fn vaporize(monitor: Vec2, asteroids: &mut HashSet<Vec2>) -> Vec2 {
     let mut count = 0;
     let mut detectable = Vec::with_capacity(100);
     loop {
-        detectable.extend(all_detectable(monitor, asteroids));
-        detectable.sort_by(|&a, &b| monitor.angle(a).partial_cmp(&monitor.angle(b)).unwrap());
+        detectable.extend(monitor.all_detectable(asteroids));
+        detectable.sort_by(|&a, &b| monitor.cmp_angles(a, b));
 
         if count + detectable.len() < 200 {
             count += detectable.len();
