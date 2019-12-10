@@ -14,11 +14,15 @@ struct Vec2 {
 }
 
 impl Vec2 {
+    /// Converts this vector into its simplified form, dividing
+    /// it by gcd(x, y).
     fn simplified(self) -> Vec2 {
         let gcd = self.x.gcd(&self.y);
         (self.x / gcd, self.y / gcd).into()
     }
 
+    /// Determines if the asteroid at this position is possibly
+    /// between the asteroids at `a` and `b`, in an axis-aligned way.
     fn between(self, a: Vec2, b: Vec2) -> bool {
         self.x >= a.x.min(b.x)
             && self.x <= a.x.max(b.x)
@@ -26,20 +30,26 @@ impl Vec2 {
             && self.y <= a.y.max(b.y)
     }
 
+    /// Determines if the asteroid at this position would block the line of
+    /// sight between `a` and `b`
     fn occludes(self, a: Vec2, b: Vec2) -> bool {
         self.between(a, b) && (self - a).simplified() == (b - a).simplified()
     }
 
+    /// Determines the angle between these vecs from the up vector, moving clockwise
     fn angle(self, b: Vec2) -> f64 {
         let diff = b - self;
         let theta = FRAC_PI_2 - (-diff.y as f64).atan2(diff.x as f64);
         theta.rem_euclid(PI * 2.0)
     }
 
+    /// Compare the angles between (self,a) and (self,b)
     fn cmp_angles(self, a: Vec2, b: Vec2) -> Ordering {
         self.angle(a).partial_cmp(&self.angle(b)).unwrap()
     }
 
+    /// Determines if `self` has line of sight to `other`, given all
+    /// the other asteroids in the field.
     fn can_see(self, other: Vec2, asteroids: &HashSet<Vec2>) -> bool {
         for &occluder in asteroids {
             if occluder == self || occluder == other {
@@ -52,6 +62,7 @@ impl Vec2 {
         true
     }
 
+    /// Enumerates all asteroids which have line of sight from `self`
     fn all_detectable(self, asteroids: &'_ HashSet<Vec2>) -> impl Iterator<Item = Vec2> + '_ {
         asteroids
             .iter()
@@ -73,13 +84,11 @@ impl From<(i32, i32)> for Vec2 {
     }
 }
 
-fn parse() -> impl Iterator<Item = &'static [u8]> {
-    INPUT.lines().map(|line| line.as_bytes())
-}
-
+/// Parse all of the asteroids into a set
 fn asteroids() -> HashSet<Vec2> {
     let mut asteroids = HashSet::new();
-    for (y, line) in parse().enumerate() {
+    let data = INPUT.lines().map(|line| line.as_bytes());
+    for (y, line) in data.enumerate() {
         for (x, &slot) in line.iter().enumerate() {
             if slot == b'#' {
                 let (x, y) = (x as i32, y as i32);
@@ -90,6 +99,9 @@ fn asteroids() -> HashSet<Vec2> {
     asteroids
 }
 
+/// Given all of the asteroids in the field, find the one which
+/// has the most detectable asteroids. Returns that asteroid and
+/// how many it can detect.
 fn best_station(asteroids: &HashSet<Vec2>) -> (Vec2, usize) {
     asteroids
         .iter()
@@ -98,6 +110,8 @@ fn best_station(asteroids: &HashSet<Vec2>) -> (Vec2, usize) {
         .unwrap()
 }
 
+/// Vaporize all of the asteroids in a clockwise motion until the
+/// 200th, returning the position of the 200th asteroid to be vaporized.
 fn vaporize(monitor: Vec2, asteroids: &mut HashSet<Vec2>) -> Vec2 {
     let mut count = 0;
     let mut detectable = Vec::with_capacity(100);
@@ -112,7 +126,7 @@ fn vaporize(monitor: Vec2, asteroids: &mut HashSet<Vec2>) -> Vec2 {
             }
         } else {
             let remaining = 200 - count;
-            // we must return the 200th asteroid to be vaporized
+            // We must return the 200th asteroid to be vaporized
             return detectable[remaining - 1];
         }
     }
