@@ -1,4 +1,4 @@
-use aoc2019::intcode::{parse, SingleIO, Cpu};
+use aoc2019::intcode::{parse, Cpu, SingleIO};
 
 use once_cell::sync::Lazy;
 

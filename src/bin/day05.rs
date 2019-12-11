@@ -1,5 +1,6 @@
 #![cfg_attr(test, feature(test))]
-#[cfg(test)] extern crate test;
+#[cfg(test)]
+extern crate test;
 
 use aoc2019::intcode::{Cpu, SingleIO};
 

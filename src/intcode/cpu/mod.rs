@@ -1,8 +1,8 @@
 use super::parse;
 use super::IO;
 
-mod instructions;
 mod addressing;
+mod instructions;
 
 pub struct Cpu<T: IO = ()> {
     pub memory: Vec<i64>,
