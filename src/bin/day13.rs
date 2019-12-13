@@ -167,6 +167,6 @@ fn part1(bench: &mut test::Bencher) {
 #[bench]
 fn part2(bench: &mut test::Bencher) {
     bench.iter(|| {
-        test::black_box(dynamic_run(false));
+        test::black_box(dynamic_run(false, Default::default()));
     });
 }
