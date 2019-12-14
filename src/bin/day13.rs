@@ -115,14 +115,15 @@ impl GameState {
 }
 
 fn plain_run() -> usize {
-    let mut cpu = Cpu::with_io(PROGRAM.clone(), GameState::default());
-    cpu.run();
+    let mut state = GameState::default();
 
-    cpu.io.screen.data.iter().filter(|&&v| v == 2).count()
+    Cpu::new(PROGRAM.clone()).run(&mut state);
+
+    state.screen.data.iter().filter(|&&v| v == 2).count()
 }
 
 fn dynamic_run(draw: bool, draw_duration: Duration) -> i64 {
-    let state = GameState {
+    let mut state = GameState {
         draw,
         draw_duration,
         ..GameState::default()
@@ -132,11 +133,11 @@ fn dynamic_run(draw: bool, draw_duration: Duration) -> i64 {
         state.draw();
     }
 
-    let mut cpu = Cpu::with_io(PROGRAM.clone(), state);
+    let mut cpu = Cpu::new(PROGRAM.clone());
     cpu.memory[0] = 2;
-    cpu.run();
+    cpu.run(&mut state);
 
-    cpu.io.score
+    state.score
 }
 
 fn main() {

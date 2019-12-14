@@ -10,7 +10,7 @@ fn process(noun: i64, verb: i64) -> i64 {
     let mut cpu = Cpu::new(opcodes());
     cpu.memory[1] = noun;
     cpu.memory[2] = verb;
-    cpu.run();
+    cpu.run(());
     cpu.memory[0]
 }
 

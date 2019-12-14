@@ -1,7 +1,6 @@
 use super::Cpu;
-use super::IO;
 
-impl<T: IO> Cpu<T> {
+impl Cpu {
     pub(super) fn i_add(&mut self) {
         let a = self.arg_get(1);
         let b = self.arg_get(2);
@@ -16,16 +15,15 @@ impl<T: IO> Cpu<T> {
         self.pc += 4;
     }
 
-    pub(super) fn i_in(&mut self) {
-        let val = self.io.input();
-        self.arg_set(1, val);
+    pub(super) fn i_in(&mut self, input: i64) {
+        self.arg_set(1, input);
         self.pc += 2;
     }
 
-    pub(super) fn i_out(&mut self) {
+    pub(super) fn i_out(&mut self) -> i64 {
         let val = self.arg_get(1);
-        self.io.output(val);
         self.pc += 2;
+        val
     }
 
     pub(super) fn i_jnz(&mut self) {

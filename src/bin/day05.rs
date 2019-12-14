@@ -2,7 +2,7 @@
 #[cfg(test)]
 extern crate test;
 
-use aoc2019::intcode::{Cpu, SingleIO};
+use aoc2019::intcode::Cpu;
 
 static INPUT: &str = include_str!("input/day05.txt");
 
@@ -10,9 +10,7 @@ const PART_1_INPUT: i64 = 1;
 const PART_2_INPUT: i64 = 5;
 
 fn calculate(input: i64) -> i64 {
-    let mut cpu = Cpu::parse_with_io(INPUT, SingleIO::new(input));
-    cpu.run();
-    cpu.io.output
+    Cpu::parse(INPUT).compute(input)
 }
 
 fn main() {
@@ -41,9 +39,8 @@ fn part_2_benchmark(bench: &mut test::Bencher) {
 fn part_1_benchmark_excl_parse(bench: &mut test::Bencher) {
     let memory = aoc2019::intcode::parse(INPUT);
     bench.iter(|| {
-        let mut cpu = Cpu::with_io(memory.clone(), SingleIO::new(PART_1_INPUT));
-        cpu.run();
-        test::black_box(cpu.io.output);
+        let mut cpu = Cpu::new(memory.clone());
+        test::black_box(cpu.compute(PART_1_INPUT));
     });
 }
 
@@ -52,8 +49,7 @@ fn part_1_benchmark_excl_parse(bench: &mut test::Bencher) {
 fn part_2_benchmark_excl_parse(bench: &mut test::Bencher) {
     let memory = aoc2019::intcode::parse(INPUT);
     bench.iter(|| {
-        let mut cpu = Cpu::with_io(memory.clone(), SingleIO::new(PART_2_INPUT));
-        cpu.run();
-        test::black_box(cpu.io.output);
+        let mut cpu = Cpu::new(memory.clone());
+        test::black_box(cpu.compute(PART_2_INPUT));
     });
 }

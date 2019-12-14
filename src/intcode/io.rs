@@ -6,6 +6,15 @@ pub trait IO {
     fn output(&mut self, value: i64);
 }
 
+impl<T: IO> IO for &mut T {
+    fn input(&mut self) -> i64 {
+        T::input(self)
+    }
+    fn output(&mut self, value: i64) {
+        T::output(self, value)
+    }
+}
+
 impl IO for () {
     fn input(&mut self) -> i64 {
         unimplemented!()

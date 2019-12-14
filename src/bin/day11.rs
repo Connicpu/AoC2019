@@ -1,16 +1,11 @@
-use aoc2019::intcode::{parse, ChannelIO, Cpu};
+use aoc2019::intcode::{Cpu, IO};
 
 use std::collections::HashMap;
 use std::ops::{Add, Sub};
-use std::sync::mpsc::{channel, sync_channel, Receiver, SyncSender};
-use std::thread::spawn;
-
-use once_cell::sync::Lazy;
 
 static INPUT: &str = include_str!("input/day11.txt");
-static PROGRAM: Lazy<Vec<i64>> = Lazy::new(|| parse(INPUT));
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default)]
 struct Vec2 {
     x: i32,
     y: i32,
@@ -36,16 +31,6 @@ impl From<(i32, i32)> for Vec2 {
     }
 }
 
-fn run_cpu() -> (SyncSender<i64>, Receiver<i64>) {
-    let (tx, cpurx) = sync_channel(0);
-    let (cputx, rx) = channel();
-
-    let mut cpu = Cpu::with_io(PROGRAM.clone(), ChannelIO::new(cpurx, cputx));
-    spawn(move || cpu.run());
-
-    (tx, rx)
-}
-
 static DIRS: [Vec2; 4] = [
     Vec2 { x: 0, y: -1 },
     Vec2 { x: 1, y: 0 },
@@ -58,15 +43,45 @@ fn color(pos: Vec2, hull: &HashMap<Vec2, i64>) -> i64 {
 }
 
 fn paint(hull: &mut HashMap<Vec2, i64>) {
-    let (input, output) = run_cpu();
-    let mut pos = Vec2 { x: 0, y: 0 };
-    let mut dir = 0;
-
-    while input.send(color(pos, &hull)).is_ok() {
-        hull.insert(pos, output.recv().unwrap());
-        dir = (dir + output.recv().unwrap() as usize * 2 + 3).rem_euclid(4);
-        pos = pos + DIRS[dir];
+    #[derive(Copy, Clone)]
+    enum State {
+        Paint,
+        Rotate,
     }
+
+    struct Painter<'a> {
+        hull: &'a mut HashMap<Vec2, i64>,
+        pos: Vec2,
+        dir: usize,
+        state: State,
+    }
+
+    impl IO for Painter<'_> {
+        fn input(&mut self) -> i64 {
+            color(self.pos, self.hull)
+        }
+
+        fn output(&mut self, value: i64) {
+            self.state = match self.state {
+                State::Paint => {
+                    self.hull.insert(self.pos, value);
+                    State::Rotate
+                }
+                State::Rotate => {
+                    self.dir = (self.dir + value as usize * 2 + 3).rem_euclid(4);
+                    self.pos = self.pos + DIRS[self.dir];
+                    State::Paint
+                }
+            }
+        }
+    }
+
+    Cpu::parse(INPUT).run(Painter {
+        hull,
+        pos: Vec2::default(),
+        dir: 0,
+        state: State::Paint,
+    });
 }
 
 fn bounds(hull: &HashMap<Vec2, i64>) -> (i32, i32, i32, i32) {

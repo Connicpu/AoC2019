@@ -1,7 +1,6 @@
 use super::Cpu;
-use super::IO;
 
-impl<T: IO> Cpu<T> {
+impl Cpu {
     pub(super) fn arg_get(&self, arg: usize) -> i64 {
         let addr = self.arg_addr(false, arg);
         if addr >= self.memory.len() {

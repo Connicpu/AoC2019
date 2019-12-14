@@ -1,4 +1,4 @@
-pub use self::cpu::Cpu;
+pub use self::cpu::{Cpu, CpuResult};
 pub use self::io::{ChannelIO, SingleIO, StdIO, IO};
 pub use crate::parse::parse_i64_vec as parse;
 
